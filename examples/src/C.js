@@ -1,0 +1,1 @@
+export default 'C模块加载成功\n'

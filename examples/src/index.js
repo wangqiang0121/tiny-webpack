@@ -1,3 +1,3 @@
-import a from './test'
+import A from './A'
 
-console.log(a)
+console.log('引入A模块成功', A)
