@@ -1,33 +1,61 @@
 #! /usr/bin/env node
-var fs = require('fs')
-var path = require('path')
-var chalk = require('chalk')
-var ora = require('ora')
-var projectPath = process.cwd()
-var bundleFile = require('./lib/bundle')
 
-var configPath = path.join(projectPath, 'tinypack.config.js')
+const fs = require('fs')
+const path = require('path')
+const chalk = require('chalk')
+const ora = require('ora')
+const projectPath = process.cwd()
 
-function init() {
-  var spinner = ora('正在打包配置文件...')
-  spinner.start()
+// 读取配置文件
+function readConfig() {
+  const configPath = path.join(projectPath, 'tinypack.config.js')
 
   if (!fs.existsSync(configPath)) {
-    spinner.stop()
-    chalk.red('找不到 "tinypack.config.js" 配置文件.')
+    throw new Error('找不到 "tinypack.config.js" 配置文件.')
   }
 
-  var config = require(configPath)
+  const config = require(configPath)
+  return config
+}
 
-  const result = bundleFile(config)
+// 编译代码
+function compile(config) {
+  const bundleFile = require('./lib/bundle')
+  try {
+    const result = bundleFile(config)
+    return result
+  } catch (e) {
+    throw e
+  }
+}
+
+// 输出文件
+function emit(result) {
   try {
     fs.writeFileSync(path.join(projectPath, config.output), result)
   } catch (e) {
     fs.mkdirSync(path.dirname(config.output))
     fs.writeFileSync(path.join(projectPath, config.output), result)
   }
-  spinner.stop()
-  chalk.yellow('已生成对应文件.')
 }
 
-init()
+function run() {
+  // 读取配置文件
+  const spinner = ora()
+  spinner.start()
+  try {
+    spinner.info('读取配置文件...')
+    const config = readConfig()
+    spinner.info('编译打包代码...')
+    const result = compile(config)
+    spinner.info('输出文件...')
+    emit(result)
+    spinner.succeed()
+    chalk.yellow('已生成对应文件.')
+  } catch (e) {
+    spinner.fail()
+    chalk.red(e)
+  }
+}
+
+run()
